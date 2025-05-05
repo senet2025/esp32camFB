@@ -160,13 +160,15 @@ void get_photo(){
     Serial.printf("Base64 인코딩 실패: %d\n", err);
   }
   else { // Base64 인코딩 성공
-    String base64_code = "data:image/jpeg;base64"; // Base64 인코딩된 데이터를 문자열로 변환
-    base64_code = base64_code + String((char*)buffer); // Base64 인코딩된 데이터 추가
+    // String base64_code = "data:image/jpeg;base64"; // Base64 인코딩된 데이터를 문자열로 변환
+    // base64_code = base64_code + String((char*)buffer); // Base64 인코딩된 데이터 추가
     
-    Serial.println(base64_code); // Base64 인코딩된 데이터 출력
+    Serial.println((char*)buffer); // Base64 인코딩된 데이터 출력
   }
+  Serial.printf("###############");
+  free(buffer); // Base64 인코딩된 데이터 해제(할당 공간 반환)
   // 프레임 버퍼 해제
   esp_camera_fb_return(fb);
-  
+ 
   //delay(1000); // 1초 대기
 }
