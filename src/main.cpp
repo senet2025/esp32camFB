@@ -160,7 +160,7 @@ void get_photo(){
     Serial.printf("Base64 인코딩 실패: %d\n", err);
   }
   else { // Base64 인코딩 성공
-    String base64_code = "data:image/jpeg;base64"; // Base64 인코딩된 데이터를 문자열로 변환
+    String base64_code = "data:image/jpeg;base64,"; // Base64 인코딩된 데이터를 문자열로 변환
     base64_code = base64_code + String((char*)buffer); // Base64 인코딩된 데이터 추가
     
     Serial.println(base64_code); // Base64 인코딩된 데이터 출력
