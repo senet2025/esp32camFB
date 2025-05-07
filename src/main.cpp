@@ -6,10 +6,19 @@
 #include <CameraPins.h> // 핀 번호를 포함한 카메라 핀 설정 파일
 #include "mbedtls/base64.h" // Base64 라이브러리 추가
 #include <base64.h> // Base64 라이브러리 추가
+#include <FirebaseESP32.h> // Firebase 라이브러리 추가
 
-//Wi-Fi 연결 정보
+FirebaseData fbdo; // Firebase 데이터 객체 생성
+FirebaseConfig config_firebase; // Firebase 구성 객체 생성
+FirebaseAuth auth; // Firebase 인증 객체 생성
+
+// Wi-Fi 연결 정보
 const char* ssid = WIFI_SSID;
 const char* password = WIFI_PASSWORD;
+
+// Firebase 연결 정보
+const char* firebase_url = FIREBASE_URL; // Firebase URL
+const char* firebase_token = FIREBASE_AUTH; // Firebase 인증 토큰
 
 void Camera_init_config();
 bool initWiFi();
@@ -23,6 +32,12 @@ void setup() {
   Camera_init_config();
   // Wi-Fi 연결 설정
   initWiFi();
+  // Firebase 연결 설정
+  config_firebase.database_url = firebase_url; // Firebase URL 설정
+  config_firebase.signer.tokens.legacy_token = firebase_token; // Firebase 인증 토큰 설정
+  // Firebase 연결 초기화
+  Firebase.begin(&config_firebase, &auth); // Firebase 초기화
+  Firebase.reconnectWiFi(true); // Wi-Fi 재연결 설정
   // 카메라 LED 핀 설정
   pinMode(BUILTIN_LED, OUTPUT);
   digitalWrite(BUILTIN_LED, HIGH); // LED 끄기
@@ -161,12 +176,19 @@ void get_photo(){
   }
   else { // Base64 인코딩 성공
     String base64_code = "data:image/jpeg;base64,"; // Base64 인코딩된 데이터를 문자열로 변환
-    base64_code = base64_code + String((char*)buffer); // Base64 인코딩된 데이터 추가
+    base64_code = base64_code + String((char) * buffer); // Base64 인코딩된 데이터 추가
     
     Serial.println(base64_code); // Base64 인코딩된 데이터 출력
+
+    // Firebase에 Base64 인코딩된 데이터 업로드
+    FirebaseJson json; // FirebaseJson 객체 생성
+    json.set("ESP32CAM", base64_code); // JSON 객체에 Base64 인코딩된 데이터 추가
+    if (Firebase.set(fbdo, "/JSON", json) == false) { // Firebase에 데이터 업로드 실패
+      Serial.println("Firebase에 이미지 업로드 실패");
+    } else {
+      Serial.println("Firebase에 이미지 업로드 성공");
+    }
   }
   // 프레임 버퍼 해제
   esp_camera_fb_return(fb);
-  
-  //delay(1000); // 1초 대기
 }
