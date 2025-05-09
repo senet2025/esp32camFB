@@ -79,12 +79,14 @@ void Camera_init_config(){
   // if PSRAM is present, init with UXGA resolution and higher JPEG quality
   // for larger pre-allocated frame buffer.
   if(psramFound()){
+      Serial.println("PSRAM is enabled");
       config.frame_size = FRAMESIZE_UXGA;
       config.fb_location = CAMERA_FB_IN_PSRAM;
       config.jpeg_quality = 8;
       config.fb_count = 2;   
   }
   else {
+      Serial.println("PSRAM is not enabled");
       // Limit the frame size when PSRAM is not available
       config.frame_size = FRAMESIZE_QVGA;
       config.fb_location = CAMERA_FB_IN_DRAM;
@@ -170,25 +172,48 @@ void get_photo(){
 
   //image의 데이터를 Base64로 인코딩
   int err = mbedtls_base64_encode(buffer, base64_size, &buffer_size, image, size);
-  
-  if (err != 0) { // Base64 인코딩 실패
-    Serial.printf("Base64 인코딩 실패: %d\n", err);
-  }
-  else { // Base64 인코딩 성공
-    String base64_code = "data:image/jpeg;base64,"; // Base64 인코딩된 데이터를 문자열로 변환
-    base64_code = base64_code + String((char) * buffer); // Base64 인코딩된 데이터 추가
-    
-    Serial.println(base64_code); // Base64 인코딩된 데이터 출력
 
-    // Firebase에 Base64 인코딩된 데이터 업로드
-    FirebaseJson json; // FirebaseJson 객체 생성
-    json.set("ESP32CAM", base64_code); // JSON 객체에 Base64 인코딩된 데이터 추가
-    if (Firebase.set(fbdo, "/JSON", json) == false) { // Firebase에 데이터 업로드 실패
-      Serial.println("Firebase에 이미지 업로드 실패");
-    } else {
-      Serial.println("Firebase에 이미지 업로드 성공");
-    }
+  if (err != 0) {
+    Serial.printf("Base64 인코딩 실패: %d\n", err);
+    free(buffer);
+    esp_camera_fb_return(fb);
+    return;
   }
+
+  // "data:image/jpeg;base64," 추가
+  String base64_code = "data:image/jpeg;base64,"; // Base64 인코딩된 데이터를 문자열로 변환
+  base64_code += String((char *) buffer); // Base64 인코딩된 데이터 추가
+  // free(buffer); // 메모리 해제
+  //delay(500); // 0.5초 대기
+  Serial.println(base64_code); // Base64 인코딩된 데이터 출력
+
+  // Firebase에 Base64 인코딩된 데이터 업로드
+  FirebaseJson json; // FirebaseJson 객체 생성
+  json.set("ESP32CAM", base64_code); // JSON 객체에 Base64 인코딩된 데이터 추가
+  if (Firebase.set(fbdo, "/JSON", json) == false) { // Firebase에 데이터 업로드 실패
+    Serial.println("Firebase에 이미지 업로드 실패");
+  } else {
+    Serial.println("Firebase에 이미지 업로드 성공");
+  }
+  // if (err != 0) { // Base64 인코딩 실패
+  //   Serial.printf("Base64 인코딩 실패: %d\n", err);
+  // }
+  // else { // Base64 인코딩 성공
+  //   String base64_code = "data:image/jpeg;base64,"; // Base64 인코딩된 데이터를 문자열로 변환
+  //   base64_code += String((char *) buffer); // Base64 인코딩된 데이터 추가
+  //   free(buffer); // 메모리 해제
+    
+  //   Serial.println(base64_code); // Base64 인코딩된 데이터 출력
+
+  //   // Firebase에 Base64 인코딩된 데이터 업로드
+  //   FirebaseJson json; // FirebaseJson 객체 생성
+  //   json.set("ESP32CAM", base64_code); // JSON 객체에 Base64 인코딩된 데이터 추가
+  //   if (Firebase.set(fbdo, "/JSON", json) == false) { // Firebase에 데이터 업로드 실패
+  //     Serial.println("Firebase에 이미지 업로드 실패");
+  //   } else {
+  //     Serial.println("Firebase에 이미지 업로드 성공");
+  //   }
+  // }
   // 프레임 버퍼 해제
   esp_camera_fb_return(fb);
 }
